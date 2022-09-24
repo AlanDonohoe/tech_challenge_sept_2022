@@ -13,6 +13,9 @@ flask_app.logger.setLevel(gunicorn_logger.level)
 def v1_event():
     request_data = request.get_json()
 
+    if not request_data.get("user_id"):
+        return jsonify({"error": "user_id is required"}), 400
+
     return jsonify(
         {
             "alert": _alert(request_data),
