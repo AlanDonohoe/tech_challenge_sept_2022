@@ -46,10 +46,29 @@ def test_v1_event(flask_client, type, amount, user_id, t):
 
         response = json.loads(response_raw.data.decode("utf-8"))
 
+        assert response_raw.status_code == 200
+
         assert response["alert"] is False
         assert not response["alert_codes"]
         assert response["user_id"] == str(user_id)
 
-        assert response_raw.status_code == 200
+    def failure_no_user_id_in_request(flask_client, type, amount, t):
+        response = flask_client.post(
+            "/v1/event/",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(
+                {
+                    "amount": amount,
+                    "t": t,
+                    "type": type,
+                }
+            ),
+        )
 
+        assert response.status_code == 400
+
+        assert b'{"error":"user_id is required"}' in response.data
+
+    # Call the above test functions
     success(flask_client, type, amount, user_id, t)
+    failure_no_user_id_in_request(flask_client, type, amount, t)
