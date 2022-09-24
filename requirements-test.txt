@@ -1,0 +1,4 @@
+faker==14.2.1
+flake8
+pytest
+pytest-cov
