@@ -1,4 +1,5 @@
 import logging
+import os
 from uuid import UUID
 
 from flask import Flask, jsonify, request
@@ -7,7 +8,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 flask_app = Flask(__name__)
 gunicorn_logger = logging.getLogger("gunicorn.error")
-flask_app.config.from_object("config.Config")
+flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+flask_app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 flask_app.logger.handlers = gunicorn_logger.handlers
 flask_app.logger.setLevel(gunicorn_logger.level)
 db = SQLAlchemy(flask_app)
