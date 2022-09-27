@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from .models import User
+from .models import Event, User
 
 load_dotenv()
 
@@ -32,7 +32,7 @@ class UserDAO(BaseDAO):
     """
 
     @classmethod
-    def create(self) -> User:
+    def create(self) -> None:
         with Session(self._db_engine()) as session:
             session.add(User())
             session.commit()
@@ -41,3 +41,34 @@ class UserDAO(BaseDAO):
     def get(self, user_id: uuid) -> User:
         with Session(self._db_engine()) as session:
             return session.query(User).filter(User.id == user_id).one()
+
+
+class EventDAO(BaseDAO):
+    """
+    Data Access Object for Event model
+    """
+
+    @classmethod
+    def create(
+        self,
+        *,
+        amount,
+        client_timestamp,
+        type,
+        user_id,
+    ) -> None:
+        with Session(self._db_engine()) as session:
+            print(
+                f"EventDAO create: amount: {amount}, client_timestamp: {client_timestamp}, type: {type}, user_id: {user_id}"
+            )
+            session.add(
+                Event(
+                    **{
+                        "amount": amount,
+                        "client_timestamp": client_timestamp,
+                        "type": type,
+                        "user_id": user_id,
+                    }
+                )
+            )
+            session.commit()
