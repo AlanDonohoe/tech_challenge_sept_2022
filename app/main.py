@@ -5,6 +5,8 @@ from uuid import UUID
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
+from db import db_api
+
 
 flask_app = Flask(__name__)
 gunicorn_logger = logging.getLogger("gunicorn.error")
@@ -14,6 +16,8 @@ flask_app.logger.handlers = gunicorn_logger.handlers
 flask_app.logger.setLevel(gunicorn_logger.level)
 db = SQLAlchemy(flask_app)
 
+WHITE_LISTED_PARAMS = ["amount", "t", "type", "user_id"]
+
 
 @flask_app.route("/v1/event/", methods=["POST"])
 def v1_event():
@@ -21,6 +25,8 @@ def v1_event():
 
     if not request_data.get("user_id"):
         return jsonify({"error": "user_id is required"}), 400
+
+    db_api.EventDAO().create(**_filtered_request_data(request_data))
 
     return jsonify(
         {
@@ -42,6 +48,23 @@ def _alert_codes(request_data: dict) -> list:
     # eg: [30, 123]
     # Delegate to UserAlerter class
     return []
+
+
+def _filtered_request_data(request_data_raw: dict) -> dict:
+    white_listed_request_data = _white_listed_request_data(request_data_raw)
+
+    return {
+        ("client_timestamp" if k == "t" else k): v
+        for (k, v) in white_listed_request_data.items()
+    }
+
+
+def _white_listed_request_data(request_data_raw) -> dict:
+    return {
+        key: request_data_raw.get(key)
+        for key in WHITE_LISTED_PARAMS
+        if request_data_raw.get(key)
+    }
 
 
 def _user_id(request_data: dict) -> UUID:
