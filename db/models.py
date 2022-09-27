@@ -22,6 +22,9 @@ class User(Base):
 
     events = relationship("Event")
 
+    def __repr__(self):
+        return f"<User(id={self.id})>"
+
 
 class Event(Base):
     __tablename__ = "event"
@@ -37,3 +40,6 @@ class Event(Base):
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     user = relationship("User", back_populates="events")
+
+    def __repr__(self):
+        return f"<Event(id={self.id})>"
