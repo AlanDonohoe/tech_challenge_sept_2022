@@ -2,6 +2,7 @@ import logging
 import os
 
 from flask import Flask, jsonify, request
+from flask_expects_json import expects_json
 
 from db import db_api
 from app.services.users.alerter import Alerter as UserAlerter
@@ -16,8 +17,20 @@ flask_app.logger.setLevel(gunicorn_logger.level)
 
 WHITE_LISTED_PARAMS = ["amount", "t", "type", "user_id"]
 
+schema = {
+    "type": "object",
+    "properties": {
+        "amount": {"type": "string"},
+        "t": {"type": "string"},
+        "type": {"type": "string"},
+        "user_id": {"type": "string"},
+    },
+    "required": ["amount" "t" "type" "user_id"],
+}
+
 
 @flask_app.route("/v1/event/", methods=["POST"])
+@expects_json(schema)
 def v1_event():
     request_data = request.get_json()
     user_id = request_data.get("user_id")
