@@ -1,11 +1,10 @@
 import logging
 import os
-from uuid import UUID
 
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
 
 from db import db_api
+from app.services.users.alerter import Alerter as UserAlerter
 
 
 flask_app = Flask(__name__)
@@ -14,7 +13,6 @@ flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 flask_app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 flask_app.logger.handlers = gunicorn_logger.handlers
 flask_app.logger.setLevel(gunicorn_logger.level)
-db = SQLAlchemy(flask_app)
 
 WHITE_LISTED_PARAMS = ["amount", "t", "type", "user_id"]
 
@@ -22,17 +20,20 @@ WHITE_LISTED_PARAMS = ["amount", "t", "type", "user_id"]
 @flask_app.route("/v1/event/", methods=["POST"])
 def v1_event():
     request_data = request.get_json()
+    user_id = request_data.get("user_id")
 
-    if not request_data.get("user_id"):
+    if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
     db_api.EventDAO().create(**_filtered_request_data(request_data))
 
+    alert_codes = _alert_codes(user_id)
+
     return jsonify(
         {
-            "alert": _alert(request_data),
-            "alert_codes": _alert_codes(request_data),
-            "user_id": _user_id(request_data),
+            "alert": any(alert_codes),
+            "alert_codes": alert_codes,
+            "user_id": user_id,
         }
     )
 
@@ -40,14 +41,8 @@ def v1_event():
 # private
 
 
-def _alert(request_data: dict) -> bool:
-    return any(_alert_codes(request_data))
-
-
-def _alert_codes(request_data: dict) -> list:
-    # eg: [30, 123]
-    # Delegate to UserAlerter class
-    return []
+def _alert_codes(user_id) -> list:
+    return UserAlerter(user_id).alert_codes()
 
 
 def _filtered_request_data(request_data_raw: dict) -> dict:
@@ -65,7 +60,3 @@ def _white_listed_request_data(request_data_raw) -> dict:
         for key in WHITE_LISTED_PARAMS
         if request_data_raw.get(key)
     }
-
-
-def _user_id(request_data: dict) -> UUID:
-    return request_data["user_id"]
