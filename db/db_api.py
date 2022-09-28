@@ -58,9 +58,6 @@ class EventDAO(BaseDAO):
         user_id,
     ) -> None:
         with Session(self._db_engine()) as session:
-            print(
-                f"EventDAO create: amount: {amount}, client_timestamp: {client_timestamp}, type: {type}, user_id: {user_id}"
-            )
             session.add(
                 Event(
                     **{
@@ -72,3 +69,21 @@ class EventDAO(BaseDAO):
                 )
             )
             session.commit()
+
+    @classmethod
+    def get_events(
+        self,
+        user_id: uuid,
+        limit: int = 1000,
+    ) -> list:
+        """
+        Get events for a user ordered in descending created_at order.
+        """
+        with Session(self._db_engine()) as session:
+            return (
+                session.query(Event)
+                .filter(Event.user_id == user_id)
+                .order_by(Event.created_at.desc())
+                .limit(limit)
+                .all()
+            )
